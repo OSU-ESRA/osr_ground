@@ -13,6 +13,12 @@ pipein = open('/tmp/rocket_pipe', 'r')
 print 'Opened pipe for read'
 #fcntl.fcntl(pipein, fcntl.F_SETFL, os.O_NONBLOCK)
 
+init = pipein.readline()[:-1]
+if not init == 'INITIALIZATION TEST':
+    print 'Failed initialization check'
+    sys.exit(0)
+print 'Passed initialization check'
+
 while 1:
     line =  pipein.readline()[:-1]
     if not line:
@@ -20,10 +26,8 @@ while 1:
         break
 
     gps = line.split(',')
-    lat = gps[0]
-    lon = gps[1]
-    alt = gps[2]
-    
-    print 'Lat: %s' % lat
-    print 'Lon: %s' % lon
-    print 'Alt: %s' % alt
+    lat = float(gps[0])
+    lon = float(gps[1])
+    alt = float(gps[2])
+
+    print 'Lat: %f   Lon: %f   Alt: %f' % (lat, lon, alt)

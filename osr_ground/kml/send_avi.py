@@ -4,22 +4,22 @@ import time
 import sys
 import os, pipes
 
-if not os.path.exists('/tmp/rocket_pipe'):
-    os.mkfifo('/tmp/rocket_pipe')
+if not os.path.exists('/tmp/rocket_avionics'):
+    os.mkfifo('/tmp/rocket_avionics')
     print 'Created pipe for write'
 
-pipeout = os.open('/tmp/rocket_pipe', os.O_WRONLY)
+pipeout = os.open('/tmp/rocket_avionics', os.O_WRONLY)
 print 'Opened pipe for write'
-coords = open('coords', 'r')
 
 index = 0
 t = 0.0
-#-10x^2+500x
+
+#-9x^2+400x
 while 1:
     
     lat = 44.565 + (0.0001 * index)
     lon = -123.278 + (0.0003 * index)
-    alt = (-10 * t * t) + (500 * t)
+    alt = (-9 * t * t) + (400 * t)
     if alt < 0:
         alt = 0
     

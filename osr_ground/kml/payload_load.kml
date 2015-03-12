@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.1">
+<Document>
+  <NetworkLink>
+	<name>Payload</name>
+	<open>l</open>
+	<Link>
+      <href>file:///home/andrey/programs/capstone/kml/point_pay.kml</href>
+      <refreshMode>onInterval</refreshMode>
+	  <refreshInterval>1</refreshInterval>
+	</Link>
+  </NetworkLink>
+</Document>
+</kml>
