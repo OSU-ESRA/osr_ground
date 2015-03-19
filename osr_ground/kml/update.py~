@@ -4,7 +4,6 @@ import random
 import time
 import sys, os, pipes
 import threading
-from pygame import mixer
 
 def getprefix(port):
     pre = '<?xml version=\"1.0\" encoding=\"UTF8\"?>\n'
@@ -54,10 +53,6 @@ def genplacemarks(places):
 def update(port):
     gps = []
     index = 0
-
-    mixer.init()
-    nuke = mixer.Sound('nuclear.wav')
-    played = 0
     
     #Open pipe
     pipein = None
@@ -91,11 +86,6 @@ def update(port):
         lat = float(ln_split[0])
         lon = float(ln_split[1])
         alt = float(ln_split[2])
-        
-        if played == 0 and port == 0:
-            if alt > 2000:
-                played = 1
-                nuke.play()
         
         #print 'Lat: %f   Lon: %f   Alt: %f' % (lat, lon, alt)
         gps.append((lon, lat, alt))

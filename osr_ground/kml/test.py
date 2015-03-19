@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import sys
+import time
+from pygame import mixer
+
 
 c = ''
 
-while 1:
-    c = sys.stdin.readline()[:1]
-    
-    print 'none'
-    if c:
-        print ord(c)
-    #sleep(1)
+mixer.init()
+nuke = mixer.Sound('nuclear.wav')
+
+nuke.play()
+
+time.sleep(2)

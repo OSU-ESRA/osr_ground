@@ -5,13 +5,19 @@ import sys
 import os, pipes, fcntl
 
 
-if not os.path.exists('/tmp/rocket_payload'):
-    os.mkfifo('/tmp/rocket_payload')
+if not os.path.exists('/tmp/rocket_pipe'):
+    os.mkfifo('/tmp/rocket_pipe')
     print 'Created pipe for read'
 
-pipein = open('/tmp/rocket_payload', 'r')
+pipein = open('/tmp/rocket_pipe', 'r')
 print 'Opened pipe for read'
 #fcntl.fcntl(pipein, fcntl.F_SETFL, os.O_NONBLOCK)
+
+init = pipein.readline()[:-1]
+if not init == 'INITIALIZATION TEST':
+    print 'Failed initialization check'
+    sys.exit(0)
+print 'Passed initialization check'
 
 while 1:
     line =  pipein.readline()[:-1]
