@@ -83,9 +83,9 @@ def update(port):
         
         line = pipein.readline()[:-1]
         if not line:
-            print 'Pipe is empty'
-            f_out.close()
-            return
+            while not line:
+                line = pipein.readline()[:-1]
+                time.sleep(0.2)
             
         ln_split = line.split(',')
         lat = float(ln_split[0])
@@ -93,9 +93,9 @@ def update(port):
         alt = float(ln_split[2])
         
         if played == 0 and port == 0:
-            if alt > 2000:
+            if alt > 500:
                 played = 1
-                nuke.play()
+                #nuke.play()
         
         #print 'Lat: %f   Lon: %f   Alt: %f' % (lat, lon, alt)
         gps.append((lon, lat, alt))

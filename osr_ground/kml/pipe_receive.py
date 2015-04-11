@@ -17,7 +17,10 @@ while 1:
     line =  pipein.readline()[:-1]
     if not line:
         print 'Pipe is empty'
-        break
+        while not line:
+            line =  pipein.readline()[:-1]
+            time.sleep(0.1)
+        #break
 
     gps = line.split(',')
     lat = float(gps[0])
