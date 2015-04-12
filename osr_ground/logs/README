@@ -1,0 +1,3 @@
+avionics0: all avionics bay data, no GPS lock.
+payload0: payload data showing transition pre-lock to post-lock
+payload1: payload data post-lock
