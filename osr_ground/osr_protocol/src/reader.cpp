@@ -40,7 +40,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	case protocol::message::log_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::log_message_t&>(decoded.payload);
 		std::cout << "<log>: " << message.data << std::endl;
-		fileout << "<log>: " << message.data << std::endl;
+		fileout << message.time << " <log>: " << message.data << std::endl;
 		break;
     }
 		
@@ -48,7 +48,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::attitude_message_t&>(decoded.payload);
 	    
 		std::cout << "<attitude>: ";
-		fileout << "<attitude>: ";
+		fileout << message.time << " <attitude>: ";
 		for (int i = 0; i < 9; i++) {
 			std::cout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
 			fileout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
@@ -60,7 +60,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	case protocol::message::motor_throttle_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::motor_throttle_message_t&>(decoded.payload);
 		std::cout << "<throttle>: ";
-		fileout << "<throttle>: ";
+		fileout << message.time << " <throttle>: ";
 		for(int i = 0; i < 4; i++) {
 			std::cout << std::fixed << std::setprecision(2) << message.throttles[i] << " ";
 			fileout << std::fixed << std::setprecision(2) << message.throttles[i] << " ";
@@ -74,7 +74,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::location_message_t&>(decoded.payload);
 	    
 		std::cout << "<location>: ";
-		fileout << "<location>: ";
+		fileout << message.time << " <location>: ";
 		std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 		fileout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 
@@ -92,7 +92,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::imu_message_t&>(decoded.payload);
 
 		std::cout << "<imu>: <gyro>: ";
-		fileout << "<imu>: <gyro>: ";
+		fileout << message.time << " <imu>: <gyro>: ";
 		for(int i = 0; i < 3; i++) {
 			std::cout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
 			fileout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
@@ -111,8 +111,8 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 
 	case protocol::message::system_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::system_message_t&>(decoded.payload);
-		std::cout << "<system>: " << +message.state << ", " << message.motorDC << std::endl;
-		fileout << "<system>: " << +message.state << ", " << message.motorDC << std::endl;
+		std::cout << "<system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
+		fileout << message.time << " <system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
 		if (message.state == 1) {
 			armed = 0;
 			printf("\033[0m");
@@ -121,6 +121,12 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 			armed = 1;
 			printf("\033[1;37;41m");
 		}
+	}
+
+	case protocol::message::sensor_calibration_response_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
+		std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+		fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 	}
 
 	default:
