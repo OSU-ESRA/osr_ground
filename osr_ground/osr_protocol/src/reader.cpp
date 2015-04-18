@@ -23,6 +23,7 @@
 #include "writer.hpp"
 
 int pipeout;
+int pipe_instrument;
 int armed;
 
 std::ofstream fileout;
@@ -49,8 +50,8 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::cout << "<attitude>: ";
 		fileout << "<attitude>: ";
 		for (int i = 0; i < 9; i++) {
-			std::cout << std::fixed << std::setprecision(6) << message.dcm[i] << " ";
-			fileout << std::fixed << std::setprecision(6) << message.dcm[i] << " ";
+			std::cout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
+			fileout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
 		}
 		std::cout << std::endl;
 		fileout << std::endl;
@@ -72,7 +73,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	case protocol::message::location_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::location_message_t&>(decoded.payload);
 	    
-		//std::cout << "<location>: ";
+		std::cout << "<location>: ";
 		fileout << "<location>: ";
 		std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 		fileout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
@@ -81,6 +82,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		os << message.lat << "," << message.lon << "," << message.alt << "\n";
 		std::string temp = os.str();
 		const char* line = temp.c_str();
+		
 		
 		write(pipeout, line, strlen(line));
 		break;
@@ -92,14 +94,14 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::cout << "<imu>: <gyro>: ";
 		fileout << "<imu>: <gyro>: ";
 		for(int i = 0; i < 3; i++) {
-			std::cout << std::fixed << std::setprecision(4) << message.gyro[i] << " ";
-			fileout << std::fixed << std::setprecision(4) << message.gyro[i] << " ";
+			std::cout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
+			fileout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
 		}
 		std::cout << "<accel>: ";
 		fileout << "<accel>: ";
 		for(int i = 0; i < 3; i++) {
-			std::cout << std::fixed << std::setprecision(4) << message.accel[i] << " ";
-			fileout << std::fixed << std::setprecision(4) << message.accel[i] << " ";
+			std::cout << std::fixed << std::setprecision(5) << message.accel[i] << " ";
+			fileout << std::fixed << std::setprecision(5) << message.accel[i] << " ";
 		}
 
 		std::cout << std::endl;
@@ -109,9 +111,8 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 
 	case protocol::message::system_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::system_message_t&>(decoded.payload);
-		printf("<system:> %u, %f\n", message.state, message.motorDC);
-		
-		fileout << "<system>: " << (uint8_t)message.state << ", " << message.motorDC << std::endl;
+		std::cout << "<system>: " << +message.state << ", " << message.motorDC << std::endl;
+		fileout << "<system>: " << +message.state << ", " << message.motorDC << std::endl;
 		if (message.state == 1) {
 			armed = 0;
 			printf("\033[0m");
@@ -153,10 +154,14 @@ int kbhit(void) {
 	return 0;
 }
 
+void write_instruments() {
+
+}
+
 int main(int argc, char **argv) {
     
 	if(argc < 2) {
-		std::cerr << "Usage: " << argv[0] << " <tty>" << std::endl;
+		std::cerr << "Usage: " << argv[0] << " <ttyUSB>" << std::endl;
 		return EXIT_FAILURE;
 	}
 	
@@ -164,10 +169,12 @@ int main(int argc, char **argv) {
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
 		pipeout = open("/tmp/rocket_avionics", O_WRONLY);
+		pipe_instrument = open("/tmp/rocket_insturment", O_WRONLY);
 	}
 	else {
 		pre = "payload";
 		pipeout = open("/tmp/rocket_payload", O_WRONLY);
+		pipe_instrument = -1;
 	}
 	
 	//std::thread thread_kml(run_kml);
@@ -235,6 +242,8 @@ int main(int argc, char **argv) {
 		protocol::decoded_message_t<255> decoded;
 		if(decoder.process(buffer[0], &decoded)) {
 			handle(decoded);
+			if (pipe_instrument != -1)
+				write_instruments();
 		}
 	}
 }

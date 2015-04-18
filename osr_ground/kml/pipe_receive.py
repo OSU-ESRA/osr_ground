@@ -16,7 +16,7 @@ print 'Opened pipe for read'
 while 1:
     line =  pipein.readline()[:-1]
     if not line:
-        print 'Pipe is empty'
+        #print 'Pipe is empty'
         while not line:
             line =  pipein.readline()[:-1]
             time.sleep(0.1)

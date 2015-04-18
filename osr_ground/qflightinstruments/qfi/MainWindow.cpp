@@ -114,7 +114,7 @@ void MainWindow::timerEvent( QTimerEvent * event )
     float airspeed  =  0.0f;
     float altitude  =  0.0f;
     float pressure  = 28.0f;
-    float climbRate =  0.0f;
+    float climbRate =  10.0f;
     float machNo    =  0.0f;
 
     if ( m_ui->pushButtonAuto->isChecked() )
