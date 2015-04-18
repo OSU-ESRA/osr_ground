@@ -124,9 +124,9 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	}
 
 	case protocol::message::sensor_calibration_response_message_t::ID: {
-		auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
-		std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
-		fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+		//auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
+		//std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+		//fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 	}
 
 	default:
