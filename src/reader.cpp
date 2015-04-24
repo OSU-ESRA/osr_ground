@@ -25,6 +25,7 @@
 int pipeout;
 int pipe_instrument;
 int armed;
+int armed_count;
 
 std::ofstream fileout;
 
@@ -60,6 +61,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		}
 		std::cout << std::endl;
 		fileout << std::endl;
+		os << std::endl;
 
 		if (pipe_instrument != -1) {
 			const char* line = os.str().c_str();
@@ -102,12 +104,9 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::cout << "<system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
 		fileout << message.time << " <system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
 
-		armed = (int)message.state;
-		if (armed == 1) {
-			printf("\033[0m");
-		}
-		else {
-			printf("\033[1;37;41m");
+		if (armed != (int)message.state) {
+			armed = (int)message.state;
+			armed_count = 0;
 		}
 		break;
 	}
@@ -176,6 +175,69 @@ int kbhit(void) {
 	return 0;
 }
 
+//Flashes the terminal pretty colors
+void update_color() {
+	if (armed == 1) {
+	}
+	if (armed == 2) { //armed
+		if (armed_count >= 20) {
+			printf("\033[0m");
+			armed_count = 0;
+		}
+		else if (armed_count > 10)
+			printf("\033[1;37;41m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	if (armed == 3) { //flight, blue
+		printf("\033[1;37;44m");
+	}
+	if (armed == 4) { //apogee, 2hz blue
+		if (armed_count >= 20) {
+			printf("\033[0m");
+			armed_count = 0;
+		}
+		else if (armed_count > 10)
+			printf("\033[1;37;44m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	if (armed == 5) { //zero g, 2hz rainbow
+		if (armed_count > 50)    //magenta
+			printf("\033[1;37;45m");
+		else if (armed_count > 40)    //blue
+			printf("\033[1;37;44m");
+		else if (armed_count > 30)    //cyan
+			printf("\033[1;37;46m");
+		else if (armed_count > 20)    //green
+			printf("\033[1;37;42m");
+		else if (armed_count > 10)    //yellow
+			printf("\033[1;37;43m");
+		else                          //red
+			printf("\033[1;37;41m");
+		armed_count++;
+	}
+	if (armed == 6) { //descent, solid violet
+		printf("\033[1;37;45m");
+	}
+	if (armed == 7) { //recovery, 2hz violet
+		if (armed_count >= 20) {
+			printf("\033[0m");
+			armed_count = 0;
+		}
+		else if (armed_count > 10)
+			printf("\033[1;37;45m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	else {
+		printf("\033[0m");
+	}
+}
+
 int main(int argc, char **argv) {
     
 	if(argc < 2) {
@@ -223,7 +285,7 @@ int main(int argc, char **argv) {
 	protocol::Encoder encoder;
 	std::mutex write_msg_mutex;
 	std::array<std::uint8_t, 255> buffer_out;
-	armed = 0;
+	armed = armed_count = 0;
 	
 	protocol::message::set_arm_state_message_t armMsg {
 		.armed = true
@@ -259,6 +321,7 @@ int main(int argc, char **argv) {
 		protocol::decoded_message_t<255> decoded;
 		if(decoder.process(buffer[0], &decoded)) {
 			handle(decoded);
+			update_color();
 		}
 	}
 }
