@@ -46,15 +46,25 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		
 	case protocol::message::attitude_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::attitude_message_t&>(decoded.payload);
-	    
+		std::ostringstream os;
+		os << "attitude,";
+
 		std::cout << "<attitude>: ";
 		fileout << message.time << " <attitude>: ";
 		for (int i = 0; i < 9; i++) {
 			std::cout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
 			fileout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
+			os << message.dcm[i];
+			if (i != 8)
+				os << ",";
 		}
 		std::cout << std::endl;
 		fileout << std::endl;
+
+		if (pipe_instrument != -1) {
+			const char* line = os.str().c_str();
+			write(pipe_instrument, line, strlen(line));
+		}
 		break;
 	}
 	case protocol::message::motor_throttle_message_t::ID: {
@@ -108,29 +118,30 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		//fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 		break;
 	}
-
-	case protocol::message::fs_info_message_t::ID: {
-		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
-		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
-		fileout << message.time << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
-		break;
-	}
-
+		
 	case protocol::message::raw_1000_message_t::ID: {
-		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
-		std::cout << "<1000>: <accel>: " std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
-		fileout << "<1000>: <accel>: " std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		auto message = reinterpret_cast<const protocol::message::raw_1000_message_t&>(decoded.payload);
+		std::cout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		fileout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
 		std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
 		fileout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
 		std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
 		fileout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
 		break;
 	}
-
+		
 	case protocol::message::raw_50_message_t::ID: {
-		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
+		auto message = reinterpret_cast<const protocol::message::raw_50_message_t&>(decoded.payload);
 		std::cout << "<temp> " << message.temp << std::endl;
 		fileout << "<temp> " << message.temp << std::endl;
+		break;
+	}
+		
+	case protocol::message::fs_info_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
+		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		fileout << message.time << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		
 		break;
 	}
 
@@ -176,12 +187,12 @@ int main(int argc, char **argv) {
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
 		pipeout = open("/tmp/rocket_avionics", O_WRONLY);
-		pipe_instrument = open("/tmp/rocket_insturment", O_WRONLY);
+		pipe_instrument = -1;
 	}
 	else {
 		pre = "payload";
 		pipeout = open("/tmp/rocket_payload", O_WRONLY);
-		pipe_instrument = -1;
+		pipe_instrument = open("/tmp/rocket_insturment", O_WRONLY);
 	}
 	
 	//std::thread thread_kml(run_kml);
