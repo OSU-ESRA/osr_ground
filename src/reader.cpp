@@ -206,7 +206,11 @@ void update_color() {
 		armed_count++;
 	}
 	if (armed == 5) { //zero g, 2hz rainbow
-		if (armed_count > 50)    //magenta
+		if (armed_count > 60) {
+			printf("\033[1;37;41m");
+			armed_count = 0;
+		}
+		else if (armed_count > 50)    //magenta
 			printf("\033[1;37;45m");
 		else if (armed_count > 40)    //blue
 			printf("\033[1;37;44m");
