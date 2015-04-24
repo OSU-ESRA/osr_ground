@@ -121,12 +121,20 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 			armed = 1;
 			printf("\033[1;37;41m");
 		}
+		break;
 	}
 
 	case protocol::message::sensor_calibration_response_message_t::ID: {
 		//auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
 		//std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 		//fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+	}
+
+	case protocol::message::fs_info_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
+		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		fileout << message.time << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		break;
 	}
 
 	default:
