@@ -83,29 +83,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::string temp = os.str();
 		const char* line = temp.c_str();
 		
-		
 		write(pipeout, line, strlen(line));
-		break;
-	}
-
-	case protocol::message::imu_message_t::ID: {
-		auto message = reinterpret_cast<const protocol::message::imu_message_t&>(decoded.payload);
-
-		std::cout << "<imu>: <gyro>: ";
-		fileout << message.time << " <imu>: <gyro>: ";
-		for(int i = 0; i < 3; i++) {
-			std::cout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
-			fileout << std::fixed << std::setprecision(5) << message.gyro[i] << " ";
-		}
-		std::cout << "<accel>: ";
-		fileout << "<accel>: ";
-		for(int i = 0; i < 3; i++) {
-			std::cout << std::fixed << std::setprecision(5) << message.accel[i] << " ";
-			fileout << std::fixed << std::setprecision(5) << message.accel[i] << " ";
-		}
-
-		std::cout << std::endl;
-		fileout << std::endl;
 		break;
 	}
 
@@ -113,12 +91,12 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::system_message_t&>(decoded.payload);
 		std::cout << "<system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
 		fileout << message.time << " <system>: " << +message.state << ", " << std::fixed << std::setprecision(3) << message.motorDC << std::endl;
-		if (message.state == 1) {
-			armed = 0;
+
+		armed = (int)message.state;
+		if (armed == 1) {
 			printf("\033[0m");
 		}
 		else {
-			armed = 1;
 			printf("\033[1;37;41m");
 		}
 		break;
@@ -128,12 +106,31 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		//auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
 		//std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 		//fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+		break;
 	}
 
 	case protocol::message::fs_info_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
 		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
 		fileout << message.time << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		break;
+	}
+
+	case protocol::message::raw_1000_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
+		std::cout << "<1000>: <accel>: " std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		fileout << "<1000>: <accel>: " std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
+		fileout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
+		std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
+		fileout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
+		break;
+	}
+
+	case protocol::message::raw_50_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
+		std::cout << "<temp> " << message.temp << std::endl;
+		fileout << "<temp> " << message.temp << std::endl;
 		break;
 	}
 
@@ -166,10 +163,6 @@ int kbhit(void) {
 		return 1;
 	}
 	return 0;
-}
-
-void write_instruments() {
-
 }
 
 int main(int argc, char **argv) {
@@ -242,11 +235,10 @@ int main(int argc, char **argv) {
 				boost::asio::write(port, boost::asio::buffer(buffer_out.data(), len));
 				armed = 1;
 			}
-			else if (armed == 1) {
+			else if (armed > 1) {
 				std::cout << "DISARMING ROCKET" << std::endl;
 				std::uint16_t len = encoder.encode(disarmMsg, &buffer_out);
 				boost::asio::write(port, boost::asio::buffer(buffer_out.data(), len));
-				armed = 0;
 			}
 
 			std::cin.clear();
@@ -256,8 +248,6 @@ int main(int argc, char **argv) {
 		protocol::decoded_message_t<255> decoded;
 		if(decoder.process(buffer[0], &decoded)) {
 			handle(decoded);
-			if (pipe_instrument != -1)
-				write_instruments();
 		}
 	}
 }
