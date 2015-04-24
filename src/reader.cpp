@@ -178,8 +178,6 @@ int kbhit(void) {
 //Flashes the terminal pretty colors
 void update_color() {
 	if (armed == 1) {
-	}
-	if (armed == 2) { //armed
 		if (armed_count >= 20) {
 			printf("\033[0m");
 			armed_count = 0;
@@ -189,6 +187,9 @@ void update_color() {
 		else
 			printf("\033[0m");
 		armed_count++;
+	}
+	if (armed == 2) { //armed
+		printf("\033[1;37;41m");
 	}
 	if (armed == 3) { //flight, blue
 		printf("\033[1;37;44m");
