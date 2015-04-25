@@ -22,7 +22,7 @@
 #include "reader.hpp"
 #include "writer.hpp"
 
-int pipeout;
+int pipe_gps;
 int pipe_instrument;
 int armed;
 int armed_count;
@@ -65,6 +65,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 
 		if (pipe_instrument != -1) {
 			const char* line = os.str().c_str();
+			std::cout << "SENT:" << line;
 			write(pipe_instrument, line, strlen(line));
 		}
 		break;
@@ -91,11 +92,16 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		fileout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 
 		std::ostringstream os;
+		std::ostringstream os2;
 		os << message.lat << "," << message.lon << "," << message.alt << "\n";
-		std::string temp = os.str();
-		const char* line = temp.c_str();
+		os2 << "altitude," << message.alt << "," << message.time << "\n";
+
+		const char* line = os.str().c_str();
+		const char* line2 = os2.str().c_str();
 		
-		write(pipeout, line, strlen(line));
+		write(pipe_gps, line, strlen(line));
+		if (pipe_instrument != -1)
+			//write(pipe_instrument, line2, strlen(line2));
 		break;
 	}
 
@@ -178,69 +184,60 @@ int kbhit(void) {
 //Flashes the terminal pretty colors
 void update_color() {
 	if (armed == 1) {
-		if (armed_count >= 20) {
-			printf("\033[0m");
+		if (armed_count > 40)
 			armed_count = 0;
-		}
-		else if (armed_count > 10)
+		else if (armed_count > 20)
 			printf("\033[1;37;41m");
 		else
 			printf("\033[0m");
 		armed_count++;
 	}
-	if (armed == 2) { //armed
+	else if (armed == 2) { //armed
 		printf("\033[1;37;41m");
 	}
-	if (armed == 3) { //flight, blue
+	else if (armed == 3) { //flight, blue
 		printf("\033[1;37;44m");
 	}
-	if (armed == 4) { //apogee, 2hz blue
-		if (armed_count >= 20) {
-			printf("\033[0m");
+	else if (armed == 4) { //apogee, 2hz blue
+		if (armed_count > 50)
 			armed_count = 0;
-		}
-		else if (armed_count > 10)
+		else if (armed_count > 25)
 			printf("\033[1;37;44m");
 		else
 			printf("\033[0m");
 		armed_count++;
 	}
-	if (armed == 5) { //zero g, 2hz rainbow
-		if (armed_count > 60) {
-			printf("\033[1;37;41m");
+	else if (armed == 5) { //zero g, 2hz rainbow
+		if (armed_count > 120)
 			armed_count = 0;
-		}
-		else if (armed_count > 50)    //magenta
-			printf("\033[1;37;45m");
-		else if (armed_count > 40)    //blue
-			printf("\033[1;37;44m");
-		else if (armed_count > 30)    //cyan
-			printf("\033[1;37;46m");
-		else if (armed_count > 20)    //green
-			printf("\033[1;37;42m");
-		else if (armed_count > 10)    //yellow
-			printf("\033[1;37;43m");
-		else                          //red
-			printf("\033[1;37;41m");
+		else if (armed_count > 100)    
+			printf("\033[1;37;45m"); //magenta
+		else if (armed_count > 80)    
+			printf("\033[1;37;44m"); //blue
+		else if (armed_count > 60)    
+			printf("\033[1;37;46m"); //cyan
+		else if (armed_count > 40)    
+			printf("\033[1;37;42m"); //green
+		else if (armed_count > 20)    
+			printf("\033[1;37;43m"); //yellow
+		else                          
+			printf("\033[1;37;41m"); //red
 		armed_count++;
 	}
-	if (armed == 6) { //descent, solid violet
+	else if (armed == 6) { //descent, solid violet
 		printf("\033[1;37;45m");
 	}
-	if (armed == 7) { //recovery, 2hz violet
-		if (armed_count >= 20) {
-			printf("\033[0m");
+	else if (armed == 7) { //recovery, 2hz violet
+		if (armed_count > 50)
 			armed_count = 0;
-		}
-		else if (armed_count > 10)
+		else if (armed_count > 25)
 			printf("\033[1;37;45m");
 		else
 			printf("\033[0m");
 		armed_count++;
 	}
-	else {
+	else
 		printf("\033[0m");
-	}
 }
 
 int main(int argc, char **argv) {
@@ -249,21 +246,21 @@ int main(int argc, char **argv) {
 		std::cerr << "Usage: " << argv[0] << " <ttyUSB>" << std::endl;
 		return EXIT_FAILURE;
 	}
-	
+
 	std::string pre = "";
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
-		pipeout = open("/tmp/rocket_avionics", O_WRONLY);
+		pipe_gps = open("/tmp/rocket_avionics", O_WRONLY);
 		pipe_instrument = -1;
 	}
 	else {
 		pre = "payload";
-		pipeout = open("/tmp/rocket_payload", O_WRONLY);
-		pipe_instrument = open("/tmp/rocket_insturment", O_WRONLY);
+		pipe_gps = open("/tmp/rocket_payload", O_WRONLY);
+		pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY);
 	}
 	
 	//std::thread thread_kml(run_kml);
-	
+    
 	//Create new numbered log file
 	int i = 0;
 	while (true) {
@@ -290,7 +287,8 @@ int main(int argc, char **argv) {
 	protocol::Encoder encoder;
 	std::mutex write_msg_mutex;
 	std::array<std::uint8_t, 255> buffer_out;
-	armed = armed_count = 0;
+	armed = 0;
+	armed_count = 0;
 	
 	protocol::message::set_arm_state_message_t armMsg {
 		.armed = true
@@ -311,9 +309,8 @@ int main(int argc, char **argv) {
 				std::cout << "ARMING ROCKET" << std::endl;
 				std::uint16_t len = encoder.encode(armMsg, &buffer_out);
 				boost::asio::write(port, boost::asio::buffer(buffer_out.data(), len));
-				armed = 1;
 			}
-			else if (armed > 1) {
+			else if (temp.compare("d") == 0) {
 				std::cout << "DISARMING ROCKET" << std::endl;
 				std::uint16_t len = encoder.encode(disarmMsg, &buffer_out);
 				boost::asio::write(port, boost::asio::buffer(buffer_out.data(), len));
