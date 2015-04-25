@@ -53,12 +53,37 @@
 
 #include <iostream>
 #include <math.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <boost/algorithm/string.hpp>
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
+float alpha     =  0.0f;
+float beta      =  0.0f;
+float roll      =  0.0f;
+float pitch     =  0.0f;
+float heading   =  0.0f;
+float slipSkid  =  0.0f;
+float turnRate  =  0.0f;
+float devH      =  0.0f;
+float devV      =  0.0f;
+float airspeed  =  0.0f;
+float altitude  =  0.0f;
+float pressure  = 28.0f;
+float climbRate =  0.0f;
+float machNo    =  0.0f;
+
+int pipein = open("/tmp/rocket_instrument", O_RDONLY);
+float prev_alt;
+int prev_time;
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,6 +97,9 @@ MainWindow::MainWindow( QWidget * parent ) :
 
     m_realTime ( 0.0 )
 {
+	prev_alt = 0.0f;
+	prev_time = 0;
+	
     m_ui->setupUi( this );
 
     m_timerId  = startTimer( 0 );
@@ -90,7 +118,37 @@ MainWindow::~MainWindow()
     if ( m_ui ) delete m_ui; m_ui = 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void handle(string input) {
+	std::vector<std::string> tokens;
+	boost::split(tokens, input, boost::is_any_of(","));
+
+	if (tokens[0].compare("attitude") == 0) { //DCM to roll, pitch, yaw
+		std::cout << "Got attitude message.\n";
+		
+		float dcm[9];
+		for (int i = 0; i < 9; i++)
+			dcm[i] = atof(tokens[i+1].c_str());
+
+		//pitch = -asin(dcm[7]);
+		//roll = atan2(-dcm[6], dcm[8]);
+		//heading = atan2(-dcm[1], dcm[4]);
+	}
+	else if (tokens[0].compare("altitude") == 0) {
+		altitude = atof(tokens[1].c_str());
+		int time = atoi(tokens[2].c_str());
+		std::cout << "Got altitude message:" << time << ": " << altitude << "\n";
+		float elapsed = ((float)time - prev_time) / 1000.0;
+		climbRate = (altitude - prev_alt) / elapsed;
+		machNo = climbRate / 343.59;
+		airspeed = climbRate;
+	}
+	
+	for (uint i = 0; i < tokens.size(); i++)
+		std::cout << i;
+	std::cout << std::endl;
+}
 
 void MainWindow::timerEvent( QTimerEvent * event )
 {
@@ -99,73 +157,15 @@ void MainWindow::timerEvent( QTimerEvent * event )
     /////////////////////////////////
 
     float timeStep = m_time.restart();
-
+    char buffer[500];
+    int readin = read(pipein, buffer, strlen(buffer));
+    if (readin > 0) {
+	    string input(buffer);
+	    //handle(input);
+	    std::cout << "Got: " << input << std::endl;
+    }
+    
     m_realTime = m_realTime + timeStep / 1000.0f;
-
-    float alpha     =  0.0f;
-    float beta      =  0.0f;
-    float roll      =  0.0f;
-    float pitch     =  0.0f;
-    float heading   =  0.0f;
-    float slipSkid  =  0.0f;
-    float turnRate  =  0.0f;
-    float devH      =  0.0f;
-    float devV      =  0.0f;
-    float airspeed  =  0.0f;
-    float altitude  =  0.0f;
-    float pressure  = 28.0f;
-    float climbRate =  10.0f;
-    float machNo    =  0.0f;
-
-    if ( m_ui->pushButtonAuto->isChecked() )
-    {
-        alpha     =   20.0f * sin( m_realTime /  10.0f );
-        beta      =   15.0f * sin( m_realTime /  10.0f );
-        roll      =  180.0f * sin( m_realTime /  10.0f );
-        pitch     =   90.0f * sin( m_realTime /  20.0f );
-        heading   =  360.0f * sin( m_realTime /  40.0f );
-        slipSkid  =    1.0f * sin( m_realTime /  10.0f );
-        turnRate  =    7.0f * sin( m_realTime /  10.0f );
-        devH      =    1.0f * sin( m_realTime /  20.0f );
-        devV      =    1.0f * sin( m_realTime /  20.0f );
-        airspeed  =  125.0f * sin( m_realTime /  40.0f ) +  125.0f;
-        altitude  = 9000.0f * sin( m_realTime /  40.0f ) + 9000.0f;
-        pressure  =    2.0f * sin( m_realTime /  20.0f ) +   30.0f;
-        climbRate =  650.0f * sin( m_realTime /  20.0f );
-        machNo    = airspeed / 650.0f;
-
-        m_ui->spinBoxAlpha ->setValue( alpha     );
-        m_ui->spinBoxBeta  ->setValue( beta      );
-        m_ui->spinBoxRoll  ->setValue( roll      );
-        m_ui->spinBoxPitch ->setValue( pitch     );
-        m_ui->spinBoxSlip  ->setValue( slipSkid  );
-        m_ui->spinBoxTurn  ->setValue( turnRate  );
-        m_ui->spinBoxDevH  ->setValue( devH      );
-        m_ui->spinBoxDevV  ->setValue( devV      );
-        m_ui->spinBoxHead  ->setValue( heading   );
-        m_ui->spinBoxSpeed ->setValue( airspeed  );
-        m_ui->spinBoxMach  ->setValue( machNo    );
-        m_ui->spinBoxAlt   ->setValue( altitude  );
-        m_ui->spinBoxPress ->setValue( pressure  );
-        m_ui->spinBoxClimb ->setValue( climbRate );
-    }
-    else
-    {
-        alpha     = (float)m_ui->spinBoxAlpha ->value();
-        beta      = (float)m_ui->spinBoxBeta  ->value();
-        roll      = (float)m_ui->spinBoxRoll  ->value();
-        pitch     = (float)m_ui->spinBoxPitch ->value();
-        heading   = (float)m_ui->spinBoxHead  ->value();
-        slipSkid  = (float)m_ui->spinBoxSlip  ->value();
-        turnRate  = (float)m_ui->spinBoxTurn  ->value();
-        devH      = (float)m_ui->spinBoxDevH  ->value();
-        devV      = (float)m_ui->spinBoxDevV  ->value();
-        airspeed  = (float)m_ui->spinBoxSpeed ->value();
-        pressure  = (float)m_ui->spinBoxPress ->value();
-        altitude  = (float)m_ui->spinBoxAlt   ->value();
-        climbRate = (float)m_ui->spinBoxClimb ->value();
-        machNo    = (float)m_ui->spinBoxMach  ->value();
-    }
 
     m_ui->widgetPFD->setFlightPathMarker ( alpha, beta );
     m_ui->widgetPFD->setRoll          ( roll     );

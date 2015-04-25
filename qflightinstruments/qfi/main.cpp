@@ -53,11 +53,26 @@
 
 #include "MainWindow.h"
 #include <QApplication>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
 int main( int argc, char * argv [] )
 {
+	std::ifstream infile("/tmp/rocket_instrument");
+	if (!infile.good()) {
+		mkfifo("/tmp/rocket_instrument", S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+		std::cout << "Created fifo: /tmp/rocket_instrument\n";
+	}
+	
     QApplication app( argc, argv );
     MainWindow   win;
 
