@@ -96,9 +96,9 @@ MainWindow::MainWindow( QWidget * parent ) :
 
     m_realTime ( 0.0 )
 {
-	
+
     m_ui->setupUi( this );
-    
+
     std::thread t1(&MainWindow::updateValues, this);
     t1.detach();
 
@@ -124,10 +124,10 @@ MainWindow::~MainWindow()
 void MainWindow::handleMessage(std::string input) {
 	std::vector<std::string> tokens;
 	boost::split(tokens, input, boost::is_any_of(","));
-	
+
 	if (tokens[0].compare("attitude") == 0) {
 		std::cout << "Attitude: ";
-		
+
 		float dcm[9];
 		for (int i = 0; i < 9; i++) {
 			dcm[i] = atof(tokens[i+1].c_str());
@@ -147,7 +147,7 @@ void MainWindow::handleMessage(std::string input) {
 		climbRate = (altitude - prev_alt) / elapsed;
 		machNo = climbRate / 343.59;
 		airspeed = climbRate;
-		
+
 		prev_alt = altitude;
 		prev_time = time;
 	}
@@ -161,7 +161,7 @@ void MainWindow::handleMessage(std::string input) {
 void MainWindow::updateValues() {
 	int pipein = open("/tmp/rocket_instrument", O_RDONLY);
 	char buffer[200];
-	
+
 	while (true) {
 		memset(buffer, 0, 200);
 		int readin = read(pipein, buffer, sizeof(buffer));
@@ -178,9 +178,9 @@ void MainWindow::timerEvent( QTimerEvent * event )
 	/////////////////////////////////
 	QMainWindow::timerEvent( event );
 	/////////////////////////////////
-	
+
 	float timeStep = m_time.restart();
-    
+
     m_realTime = m_realTime + timeStep / 1000.0f;
 
     m_ui->widgetPFD->setFlightPathMarker ( alpha, beta );
