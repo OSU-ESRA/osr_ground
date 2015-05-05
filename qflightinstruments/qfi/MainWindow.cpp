@@ -60,6 +60,7 @@
 #include <sstream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
+#include <thread>
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
@@ -81,9 +82,9 @@ float pressure  = 28.0f;
 float climbRate =  0.0f;
 float machNo    =  0.0f;
 
-int pipein = open("/tmp/rocket_instrument", O_RDONLY);
 float prev_alt;
 int prev_time;
+
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,10 +98,11 @@ MainWindow::MainWindow( QWidget * parent ) :
 
     m_realTime ( 0.0 )
 {
-	prev_alt = 0.0f;
-	prev_time = 0;
 	
     m_ui->setupUi( this );
+    
+    std::thread t1(&MainWindow::updateValues, this);
+    t1.detach();
 
     m_timerId  = startTimer( 0 );
 
@@ -120,50 +122,66 @@ MainWindow::~MainWindow()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void handle(string input) {
+
+void MainWindow::handleMessage(string input) {
 	std::vector<std::string> tokens;
 	boost::split(tokens, input, boost::is_any_of(","));
-
-	if (tokens[0].compare("attitude") == 0) { //DCM to roll, pitch, yaw
-		std::cout << "Got attitude message.\n";
+	
+	if (tokens[0].compare("attitude") == 0) {
+		std::cout << "Attitude: ";
 		
 		float dcm[9];
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 9; i++) {
 			dcm[i] = atof(tokens[i+1].c_str());
+			std::cout << dcm[i] << ", ";
+		}
+		std::cout << std::endl;
 
-		//pitch = -asin(dcm[7]);
-		//roll = atan2(-dcm[6], dcm[8]);
-		//heading = atan2(-dcm[1], dcm[4]);
+		roll = atan2(dcm[6], dcm[7]);
+		pitch = acos(dcm[8]);
+		heading = -atan2(dcm[2], dcm[5]);
 	}
 	else if (tokens[0].compare("altitude") == 0) {
 		altitude = atof(tokens[1].c_str());
 		int time = atoi(tokens[2].c_str());
-		std::cout << "Got altitude message:" << time << ": " << altitude << "\n";
+		std::cout << "Altitude: " << altitude << ", time: " << time << "\n";
 		float elapsed = ((float)time - prev_time) / 1000.0;
 		climbRate = (altitude - prev_alt) / elapsed;
 		machNo = climbRate / 343.59;
 		airspeed = climbRate;
+		
+		prev_alt = altitude;
+		prev_time = time;
 	}
-	
-	for (uint i = 0; i < tokens.size(); i++)
-		std::cout << i;
-	std::cout << std::endl;
+	else if (tokens[0].compare("pressure") == 0) {
+		//pressure = atof(tokens[1].c_str());
+		//std::cout << "Got pressure message:" << pressure << std::endl;
+	}
 }
+
+
+void MainWindow::updateValues() {
+	int pipein = open("/tmp/rocket_instrument", O_RDONLY);
+	char buffer[200];
+	
+	while (true) {
+		memset(buffer, 0, 200);
+		int readin = read(pipein, buffer, sizeof(buffer));
+		if (readin > 0) {
+			string input(buffer);
+			handleMessage(input);
+		}
+	}
+}
+
 
 void MainWindow::timerEvent( QTimerEvent * event )
 {
-    /////////////////////////////////
-    QMainWindow::timerEvent( event );
-    /////////////////////////////////
-
-    float timeStep = m_time.restart();
-    char buffer[500];
-    int readin = read(pipein, buffer, strlen(buffer));
-    if (readin > 0) {
-	    string input(buffer);
-	    //handle(input);
-	    std::cout << "Got: " << input << std::endl;
-    }
+	/////////////////////////////////
+	QMainWindow::timerEvent( event );
+	/////////////////////////////////
+	
+	float timeStep = m_time.restart();
     
     m_realTime = m_realTime + timeStep / 1000.0f;
 

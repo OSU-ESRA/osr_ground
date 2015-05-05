@@ -78,6 +78,8 @@ protected:
 private:
 
     Ui::MainWindow * m_ui;
+    void updateValues();
+    void handleMessage(std::string message);
 
     int m_timerId;
     int m_steps;

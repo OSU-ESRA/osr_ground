@@ -4,7 +4,6 @@ import random
 import time
 import sys, os, pipes
 import threading
-from pygame import mixer
 
 def getprefix(port):
     pre = '<?xml version=\"1.0\" encoding=\"UTF8\"?>\n'
@@ -54,15 +53,11 @@ def genplacemarks(places):
 def update(port):
     gps = []
     index = 0
-
-    mixer.init()
-    nuke = mixer.Sound('nuclear.wav')
-    played = 0
     
-    #Open pipe
     pipein = None
     f_out = None
     
+    #Open pipes and output files
     if port == 0:
         if not os.path.exists('/tmp/rocket_avionics'):
             os.mkfifo('/tmp/rocket_avionics')
@@ -70,6 +65,7 @@ def update(port):
 
         pipein = open('/tmp/rocket_avionics', 'r')
         print 'opened rocket_avionics for read'
+        f_out = open('point_avi.kml', 'w')
     else:
         if not os.path.exists('/tmp/rocket_payload'):
             os.mkfifo('/tmp/rocket_payload')
@@ -77,7 +73,8 @@ def update(port):
         
         pipein = open('/tmp/rocket_payload', 'r')
         print 'opened rocket_payload for read'
-        
+        f_out = open('point_pay.kml', 'w')
+
     while 1:
         index += 1
         
@@ -85,19 +82,14 @@ def update(port):
         if not line:
             while not line:
                 line = pipein.readline()[:-1]
-                time.sleep(0.2)
+                time.sleep(0.05)
             
         ln_split = line.split(',')
         lat = float(ln_split[0])
         lon = float(ln_split[1])
         alt = float(ln_split[2])
         
-        if played == 0 and port == 0:
-            if alt > 500:
-                played = 1
-                #nuke.play()
-        
-        #print 'Lat: %f   Lon: %f   Alt: %f' % (lat, lon, alt)
+        print 'Lat: %f   Lon: %f   Alt: %f' % (lat, lon, alt)
         gps.append((lon, lat, alt))
         
         pre = getprefix(port)
@@ -119,10 +111,6 @@ def update(port):
         post += '</kml>\n'
         
         output = pre + coords  + post
-        if port == 0:
-            f_out = open('point_avi.kml', 'w')
-        else:
-            f_out = open('point_pay.kml', 'w')
         f_out.write(output)
 
 

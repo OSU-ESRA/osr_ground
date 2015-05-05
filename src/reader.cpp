@@ -29,6 +29,65 @@ int armed_count;
 
 std::ofstream fileout;
 
+//Flashes the terminal pretty colors
+void update_color() {
+	if (armed == 1) {
+		if (armed_count > 60)
+			armed_count = 0;
+		else if (armed_count > 30)
+			printf("\033[1;37;41m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	else if (armed == 2) { //armed
+		printf("\033[1;37;41m");
+	}
+	else if (armed == 3) { //flight, blue
+		printf("\033[1;37;44m");
+	}
+	else if (armed == 4) { //apogee, 2hz blue
+		if (armed_count > 60)
+			armed_count = 0;
+		else if (armed_count > 30)
+			printf("\033[1;37;44m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	else if (armed == 5) { //zero g, 2hz rainbow
+		if (armed_count > 120)
+			armed_count = 0;
+		else if (armed_count > 100)    
+			printf("\033[1;37;45m"); //magenta
+		else if (armed_count > 80)    
+			printf("\033[1;37;44m"); //blue
+		else if (armed_count > 60)    
+			printf("\033[1;37;46m"); //cyan
+		else if (armed_count > 40)    
+			printf("\033[1;37;42m"); //green
+		else if (armed_count > 20)    
+			printf("\033[1;37;43m"); //yellow
+		else                          
+			printf("\033[1;37;41m"); //red
+		armed_count++;
+	}
+	else if (armed == 6) { //descent, solid violet
+		printf("\033[1;37;45m");
+	}
+	else if (armed == 7) { //recovery, 2hz violet
+		if (armed_count > 60)
+			armed_count = 0;
+		else if (armed_count > 30)
+			printf("\033[1;37;45m");
+		else
+			printf("\033[0m");
+		armed_count++;
+	}
+	else
+		printf("\033[0m");
+}
+
 template <std::size_t buffer_size>
 void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	switch(decoded.id) {
@@ -42,6 +101,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::log_message_t&>(decoded.payload);
 		std::cout << "<log>: " << message.data << std::endl;
 		fileout << message.time << " <log>: " << message.data << std::endl;
+		update_color();
 		break;
     }
 		
@@ -62,46 +122,48 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::cout << std::endl;
 		fileout << std::endl;
 		os << std::endl;
+		update_color();
 
 		if (pipe_instrument != -1) {
 			const char* line = os.str().c_str();
-			std::cout << "SENT:" << line;
 			write(pipe_instrument, line, strlen(line));
 		}
 		break;
 	}
 	case protocol::message::motor_throttle_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::motor_throttle_message_t&>(decoded.payload);
-		std::cout << "<throttle>: ";
+		//std::cout << "<throttle>: ";
 		fileout << message.time << " <throttle>: ";
 		for(int i = 0; i < 4; i++) {
-			std::cout << std::fixed << std::setprecision(2) << message.throttles[i] << " ";
+			//std::cout << std::fixed << std::setprecision(2) << message.throttles[i] << " ";
 			fileout << std::fixed << std::setprecision(2) << message.throttles[i] << " ";
 		}
-		std::cout << std::endl;
+		//std::cout << std::endl;
 		fileout << std::endl;
+		//update_color();
 		break;
 	}
 
 	case protocol::message::location_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::location_message_t&>(decoded.payload);
 	    
-		std::cout << "<location>: ";
+		//std::cout << "<location>: ";
 		fileout << message.time << " <location>: ";
-		std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
+		//std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 		fileout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 
 		std::ostringstream os;
 		std::ostringstream os2;
-		os << message.lat << "," << message.lon << "," << message.alt << "\n";
+		os << message.lat << "," << message.lon << "," << message.alt<< "\n";
 		os2 << "altitude," << message.alt << "," << message.time << "\n";
 
 		const char* line = os.str().c_str();
 		const char* line2 = os2.str().c_str();
 		
 		write(pipe_gps, line, strlen(line));
+		//update_color();
 		if (pipe_instrument != -1)
-			//write(pipe_instrument, line2, strlen(line2));
+			write(pipe_instrument, line2, strlen(line2));
 		break;
 	}
 
@@ -114,6 +176,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 			armed = (int)message.state;
 			armed_count = 0;
 		}
+		update_color();
 		break;
 	}
 
@@ -126,27 +189,30 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		
 	case protocol::message::raw_1000_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::raw_1000_message_t&>(decoded.payload);
-		std::cout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
-		fileout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
-		std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
+		//std::cout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		fileout << message.time << " <1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		//std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
 		fileout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
-		std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
+		//std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
 		fileout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
+		update_color();
 		break;
 	}
 		
 	case protocol::message::raw_50_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::raw_50_message_t&>(decoded.payload);
-		std::cout << "<temp> " << message.temp << std::endl;
-		fileout << "<temp> " << message.temp << std::endl;
+		std::cout << "<temp>: " << message.temp << " <bar>: " << message.bar << std::endl;
+		fileout << message.time << " <temp>: " << message.temp << " <bar>: " << message.bar << std::endl;
+		update_color();
 		break;
 	}
 		
 	case protocol::message::fs_info_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
 		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
-		fileout << message.time << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		fileout << message.time << " <filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
 		
+		update_color();
 		break;
 	}
 
@@ -181,64 +247,6 @@ int kbhit(void) {
 	return 0;
 }
 
-//Flashes the terminal pretty colors
-void update_color() {
-	if (armed == 1) {
-		if (armed_count > 40)
-			armed_count = 0;
-		else if (armed_count > 20)
-			printf("\033[1;37;41m");
-		else
-			printf("\033[0m");
-		armed_count++;
-	}
-	else if (armed == 2) { //armed
-		printf("\033[1;37;41m");
-	}
-	else if (armed == 3) { //flight, blue
-		printf("\033[1;37;44m");
-	}
-	else if (armed == 4) { //apogee, 2hz blue
-		if (armed_count > 50)
-			armed_count = 0;
-		else if (armed_count > 25)
-			printf("\033[1;37;44m");
-		else
-			printf("\033[0m");
-		armed_count++;
-	}
-	else if (armed == 5) { //zero g, 2hz rainbow
-		if (armed_count > 120)
-			armed_count = 0;
-		else if (armed_count > 100)    
-			printf("\033[1;37;45m"); //magenta
-		else if (armed_count > 80)    
-			printf("\033[1;37;44m"); //blue
-		else if (armed_count > 60)    
-			printf("\033[1;37;46m"); //cyan
-		else if (armed_count > 40)    
-			printf("\033[1;37;42m"); //green
-		else if (armed_count > 20)    
-			printf("\033[1;37;43m"); //yellow
-		else                          
-			printf("\033[1;37;41m"); //red
-		armed_count++;
-	}
-	else if (armed == 6) { //descent, solid violet
-		printf("\033[1;37;45m");
-	}
-	else if (armed == 7) { //recovery, 2hz violet
-		if (armed_count > 50)
-			armed_count = 0;
-		else if (armed_count > 25)
-			printf("\033[1;37;45m");
-		else
-			printf("\033[0m");
-		armed_count++;
-	}
-	else
-		printf("\033[0m");
-}
 
 int main(int argc, char **argv) {
     
@@ -250,13 +258,13 @@ int main(int argc, char **argv) {
 	std::string pre = "";
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
-		pipe_gps = open("/tmp/rocket_avionics", O_WRONLY);
+		pipe_gps = open("/tmp/rocket_avionics", O_WRONLY | O_NONBLOCK);
 		pipe_instrument = -1;
 	}
 	else {
 		pre = "payload";
-		pipe_gps = open("/tmp/rocket_payload", O_WRONLY);
-		pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY);
+		pipe_gps = open("/tmp/rocket_payload", O_WRONLY, O_NONBLOCK);
+		pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY,O_NONBLOCK);
 	}
 	
 	//std::thread thread_kml(run_kml);
@@ -323,7 +331,6 @@ int main(int argc, char **argv) {
 		protocol::decoded_message_t<255> decoded;
 		if(decoder.process(buffer[0], &decoded)) {
 			handle(decoded);
-			update_color();
 		}
 	}
 }
