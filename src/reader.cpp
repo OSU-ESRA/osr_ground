@@ -28,8 +28,9 @@ int armed_count;
 
 std::ofstream fileout;
 
-//Flashes the terminal pretty colors
+//Uses ANSI color codes to change the terminal colors based on system state
 void update_color() {
+	//Pre-arm, flashing red
 	if (armed == 1) {
 		if (armed_count > 60)
 			armed_count = 0;
@@ -39,13 +40,16 @@ void update_color() {
 			printf("\033[0m");
 		armed_count++;
 	}
-	else if (armed == 2) { //armed
+	//Armed, solid red
+	else if (armed == 2) {
 		printf("\033[1;37;41m");
 	}
-	else if (armed == 3) { //flight, blue
+	//Flight, solid blue
+	else if (armed == 3) {
 		printf("\033[1;37;44m");
 	}
-	else if (armed == 4) { //apogee, 2hz blue
+	//Apogee, flashing blue
+	else if (armed == 4) {
 		if (armed_count > 60)
 			armed_count = 0;
 		else if (armed_count > 30)
@@ -54,27 +58,30 @@ void update_color() {
 			printf("\033[0m");
 		armed_count++;
 	}
-	else if (armed == 5) { //zero g, 2hz rainbow
+	//Zero-g, flashing multicolored
+	else if (armed == 5) {
 		if (armed_count > 120)
 			armed_count = 0;
 		else if (armed_count > 100)    
-			printf("\033[1;37;45m"); //magenta
+			printf("\033[1;37;45m");
 		else if (armed_count > 80)    
-			printf("\033[1;37;44m"); //blue
+			printf("\033[1;37;44m");
 		else if (armed_count > 60)    
-			printf("\033[1;37;46m"); //cyan
+			printf("\033[1;37;46m");
 		else if (armed_count > 40)    
-			printf("\033[1;37;42m"); //green
+			printf("\033[1;37;42m");
 		else if (armed_count > 20)    
-			printf("\033[1;37;43m"); //yellow
+			printf("\033[1;37;43m");
 		else                          
-			printf("\033[1;37;41m"); //red
+			printf("\033[1;37;41m");
 		armed_count++;
 	}
-	else if (armed == 6) { //descent, solid violet
+	//Descent, solid magenta
+	else if (armed == 6) {
 		printf("\033[1;37;45m");
 	}
-	else if (armed == 7) { //recovery, 2hz violet
+	//Recovery, flashing magenta
+	else if (armed == 7) {
 		if (armed_count > 60)
 			armed_count = 0;
 		else if (armed_count > 30)
@@ -87,13 +94,17 @@ void update_color() {
 		printf("\033[0m");
 }
 
+/*
+ * Cases for handling each message type received through the serial port.
+ *
+ * All messages are output to the fileout, some messages are currently not being printed to STDOUT. Additionally, some messages are piped to other parts of the program, using linux named pipes.
+ *
+ * If new messages are added to the protocol, a matching case must be added here.
+ */
 template <std::size_t buffer_size>
 void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	switch(decoded.id) {
 	case protocol::message::heartbeat_message_t::ID: {
-		//auto message = reinterpret_cast<const protocol::message::heartbeat_message_t&>(decoded.payload);
-		//std::cout << "<heartbeat>: " << (int) message.seq << std::endl;
-		//fileout << "<heartbeat>: " << (int) message.seq << std::endl;
 		break;
 	}
 	case protocol::message::log_message_t::ID: {
@@ -112,8 +123,8 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		std::cout << "<attitude>: ";
 		fileout << message.time << " <attitude>: ";
 		for (int i = 0; i < 9; i++) {
-			std::cout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
-			fileout << std::fixed << std::setprecision(3) << message.dcm[i] << " ";
+			std::cout<<std::fixed<<std::setprecision(3)<<message.dcm[i]<<" ";
+			fileout << std::fixed<<std::setprecision(3)<<message.dcm[i]<<" ";
 			os << message.dcm[i];
 			if (i != 8)
 				os << ",";
