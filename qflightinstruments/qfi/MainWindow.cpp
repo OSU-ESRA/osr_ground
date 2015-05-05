@@ -85,8 +85,6 @@ float machNo    =  0.0f;
 float prev_alt;
 int prev_time;
 
-using namespace std;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 MainWindow::MainWindow( QWidget * parent ) :
@@ -113,7 +111,7 @@ MainWindow::MainWindow( QWidget * parent ) :
 
 MainWindow::~MainWindow()
 {
-    cout << "Average time step: " << ( (double)m_realTime ) / ( (double)m_steps ) << " s" << endl;
+    std::cout << "Average time step: " << ( (double)m_realTime ) / ( (double)m_steps ) << " s" << std::endl;
 
     if ( m_timerId ) killTimer( m_timerId );
 
@@ -123,7 +121,7 @@ MainWindow::~MainWindow()
 ///////////////////////////////////////////////////////////////////////////////
 
 
-void MainWindow::handleMessage(string input) {
+void MainWindow::handleMessage(std::string input) {
 	std::vector<std::string> tokens;
 	boost::split(tokens, input, boost::is_any_of(","));
 	
@@ -168,7 +166,7 @@ void MainWindow::updateValues() {
 		memset(buffer, 0, 200);
 		int readin = read(pipein, buffer, sizeof(buffer));
 		if (readin > 0) {
-			string input(buffer);
+			std::string input(buffer);
 			handleMessage(input);
 		}
 	}
