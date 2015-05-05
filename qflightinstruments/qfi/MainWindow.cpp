@@ -88,34 +88,34 @@ int prev_time;
 ////////////////////////////////////////////////////////////////////////////////
 
 MainWindow::MainWindow( QWidget * parent ) :
-    QMainWindow( parent ),
-    m_ui( new Ui::MainWindow ),
+	QMainWindow( parent ),
+	m_ui( new Ui::MainWindow ),
 
-    m_timerId ( 0 ),
-    m_steps   ( 0 ),
+	m_timerId ( 0 ),
+	m_steps   ( 0 ),
 
-    m_realTime ( 0.0 )
+	m_realTime ( 0.0 )
 {
 
-    m_ui->setupUi( this );
+	m_ui->setupUi( this );
 
-    std::thread t1(&MainWindow::updateValues, this);
-    t1.detach();
+	std::thread t1(&MainWindow::updateValues, this);
+	t1.detach();
 
-    m_timerId  = startTimer( 0 );
+	m_timerId  = startTimer( 0 );
 
-    m_time.start();
+	m_time.start();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 MainWindow::~MainWindow()
 {
-    std::cout << "Average time step: " << ( (double)m_realTime ) / ( (double)m_steps ) << " s" << std::endl;
+	std::cout << "Average time step: " << ( (double)m_realTime ) / ( (double)m_steps ) << " s" << std::endl;
 
-    if ( m_timerId ) killTimer( m_timerId );
+	if ( m_timerId ) killTimer( m_timerId );
 
-    if ( m_ui ) delete m_ui; m_ui = 0;
+	if ( m_ui ) delete m_ui; m_ui = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,23 +181,23 @@ void MainWindow::timerEvent( QTimerEvent * event )
 
 	float timeStep = m_time.restart();
 
-    m_realTime = m_realTime + timeStep / 1000.0f;
+	m_realTime = m_realTime + timeStep / 1000.0f;
 
-    m_ui->widgetPFD->setFlightPathMarker ( alpha, beta );
-    m_ui->widgetPFD->setRoll          ( roll     );
-    m_ui->widgetPFD->setPitch         ( pitch     );
-    m_ui->widgetPFD->setSlipSkid      ( slipSkid  );
-    m_ui->widgetPFD->setTurnRate      ( turnRate / 3.0f );
-    m_ui->widgetPFD->setDevH          ( devH      );
-    m_ui->widgetPFD->setDevV          ( devV      );
-    m_ui->widgetPFD->setHeading       ( heading   );
-    m_ui->widgetPFD->setAirspeed      ( airspeed  );
-    m_ui->widgetPFD->setMachNo        ( machNo    );
-    m_ui->widgetPFD->setAltitude      ( altitude  );
-    m_ui->widgetPFD->setPressure      ( pressure  );
-    m_ui->widgetPFD->setClimbRate     ( climbRate / 100.0f );
+	m_ui->widgetPFD->setFlightPathMarker ( alpha, beta );
+	m_ui->widgetPFD->setRoll          ( roll     );
+	m_ui->widgetPFD->setPitch         ( pitch     );
+	m_ui->widgetPFD->setSlipSkid      ( slipSkid  );
+	m_ui->widgetPFD->setTurnRate      ( turnRate / 3.0f );
+	m_ui->widgetPFD->setDevH          ( devH      );
+	m_ui->widgetPFD->setDevV          ( devV      );
+	m_ui->widgetPFD->setHeading       ( heading   );
+	m_ui->widgetPFD->setAirspeed      ( airspeed  );
+	m_ui->widgetPFD->setMachNo        ( machNo    );
+	m_ui->widgetPFD->setAltitude      ( altitude  );
+	m_ui->widgetPFD->setPressure      ( pressure  );
+	m_ui->widgetPFD->setClimbRate     ( climbRate / 100.0f );
 
-    m_ui->widgetPFD->update();
+	m_ui->widgetPFD->update();
 
-    m_steps++;
+	m_steps++;
 }
