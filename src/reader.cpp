@@ -20,7 +20,6 @@
 #include "protocol/decoder.hpp"
 
 #include "reader.hpp"
-#include "writer.hpp"
 
 int pipe_gps;
 int pipe_instrument;
