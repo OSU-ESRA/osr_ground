@@ -137,9 +137,9 @@ void MainWindow::handleMessage(string input) {
 		}
 		std::cout << std::endl;
 
-		roll = atan2(dcm[6], dcm[7]);
-		pitch = acos(dcm[8]);
-		heading = -atan2(dcm[2], dcm[5]);
+		roll = 0.0;//atan2(dcm[7], dcm[8]) * 180 / M_PI;
+		pitch = 0.0;//-asin(dcm[6]) * 180 / M_PI;
+		heading = atan2(-dcm[1], dcm[0]) * 180 / M_PI;
 	}
 	else if (tokens[0].compare("altitude") == 0) {
 		altitude = atof(tokens[1].c_str());
@@ -148,7 +148,7 @@ void MainWindow::handleMessage(string input) {
 		float elapsed = ((float)time - prev_time) / 1000.0;
 		climbRate = (altitude - prev_alt) / elapsed;
 		machNo = climbRate / 343.59;
-		airspeed = climbRate;
+		airspeed = abs(climbRate);
 		
 		prev_alt = altitude;
 		prev_time = time;
