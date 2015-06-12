@@ -193,7 +193,7 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	case protocol::message::sensor_calibration_response_message_t::ID: {
 		//auto message = reinterpret_cast<const protocol::message::sensor_calibration_response_message_t&>(decoded.payload);
 		//std::cout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
-		//fileout << "<calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
+		//fileout << message.time << " <calibration>: <accel>: " << "<gyro>: " << "<mag>: " << std::endl;
 		break;
 	}
 		
@@ -213,13 +213,20 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		auto message = reinterpret_cast<const protocol::message::raw_50_message_t&>(decoded.payload);
 		std::cout << "<temp>: " << message.temp << " <bar>: " << message.bar << std::endl;
 		fileout << message.time << " <temp>: " << message.temp << " <bar>: " << message.bar << std::endl;
+
+		std::ostringstream os;
+		os << "pressure," << message.bar << "\n";
+		const char* line = os.str().c_str();
+		
+		if (pipe_instrument != -1)
+			write(pipe_instrument, line, strlen(line));
 		update_color();
 		break;
 	}
 		
 	case protocol::message::fs_info_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
-		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
+		std::cout << " <filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
 		fileout << message.time << " <filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
 		
 		update_color();
@@ -233,6 +240,11 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	}
 }
 
+
+/*
+ * Nonblocking check if keyboard input happened.
+ * Used to check for arm/disarm keyboard commands.
+ */
 int kbhit(void) {
 	struct termios oldt, newt;
 	int ch;
@@ -265,6 +277,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
+	//Assumes first serial device connected is payload, second is avionics
 	std::string pre = "";
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
@@ -277,8 +290,6 @@ int main(int argc, char **argv) {
 		pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY,O_NONBLOCK);
 	}
 	
-	//std::thread thread_kml(run_kml);
-    
 	//Create new numbered log file
 	int i = 0;
 	while (true) {
@@ -293,15 +304,14 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	//serial read code begins
+	//Setup serial ports
 	boost::asio::io_service io;
 	boost::asio::serial_port port(io, argv[1]);
 	port.set_option(boost::asio::serial_port_base::baud_rate(38400));
 	
 	protocol::Decoder decoder;
 	
-	
-	//Arm and disarm messages
+	//Setup arm and disarm messages
 	protocol::Encoder encoder;
 	std::mutex write_msg_mutex;
 	std::array<std::uint8_t, 255> buffer_out;

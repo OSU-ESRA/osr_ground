@@ -133,29 +133,34 @@ void MainWindow::handleMessage(string input) {
 		float dcm[9];
 		for (int i = 0; i < 9; i++) {
 			dcm[i] = atof(tokens[i+1].c_str());
-			std::cout << dcm[i] << ", ";
+		    std::cout << dcm[i] << ", ";
 		}
 		std::cout << std::endl;
 
-		roll = 0.0;//atan2(dcm[7], dcm[8]) * 180 / M_PI;
-		pitch = 0.0;//-asin(dcm[6]) * 180 / M_PI;
+		//roll = atan2(dcm[5], dcm[4]) * 180 / M_PI;
+		//pitch = -asin(dcm[2]) * 180 / M_PI;
+		//heading = atan2(dcm[1], dcm[0]) * 180 / M_PI;
+
+		roll = atan2(dcm[5], dcm[8]) * 180 / M_PI; //atan2(dcm[5], sqrt(dcm[3]*dcm[3] + dcm[4]*dcm[4])) * 180 / M_PI;
+		pitch = atan2(dcm[2], sqrt(dcm[0]*dcm[0] + dcm[1]*dcm[1])) * 180 / M_PI;
 		heading = atan2(-dcm[1], dcm[0]) * 180 / M_PI;
 	}
 	else if (tokens[0].compare("altitude") == 0) {
-		altitude = atof(tokens[1].c_str());
+		altitude =  atof(tokens[1].c_str());
 		int time = atoi(tokens[2].c_str());
-		std::cout << "Altitude: " << altitude << ", time: " << time << "\n";
+
+		//Calculate airspeed, mach number, and climb rate
 		float elapsed = ((float)time - prev_time) / 1000.0;
 		climbRate = (altitude - prev_alt) / elapsed;
 		machNo = climbRate / 343.59;
 		airspeed = abs(climbRate);
+		std::cout << "Altitude: " << altitude << ", time: " << time << ", speed: " << airspeed <<"\n";
 		
 		prev_alt = altitude;
 		prev_time = time;
 	}
 	else if (tokens[0].compare("pressure") == 0) {
-		//pressure = atof(tokens[1].c_str());
-		//std::cout << "Got pressure message:" << pressure << std::endl;
+	    pressure = atof(tokens[1].c_str());
 	}
 }
 

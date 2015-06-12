@@ -1101,7 +1101,7 @@ void qfi_PFD::ALT::updatePressure()
     }
     else if ( m_pressureUnit == 2 )
     {
-        m_itemPressure->setPlainText( QString::number( m_pressure, 'f', 2 ) + QString( " IN" ) );
+        m_itemPressure->setPlainText( QString::number( m_pressure, 'f', 2 ) + QString( " Bar" ) );
     }
 }
 
