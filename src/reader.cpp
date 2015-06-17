@@ -157,9 +157,9 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 	case protocol::message::location_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::location_message_t&>(decoded.payload);
 	    
-		//std::cout << "<location>: ";
+		std::cout << "<location>: ";
 		fileout << message.time << " <location>: ";
-		//std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
+		std::cout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 		fileout << std::fixed << std::setprecision(6) << message.lat << ", " << message.lon << ", " << message.alt << std::endl;
 
 		std::ostringstream os;
@@ -199,11 +199,11 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		
 	case protocol::message::raw_1000_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::raw_1000_message_t&>(decoded.payload);
-		//std::cout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
+		std::cout << "<1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
 		fileout << message.time << " <1000>: <accel>: " << std::fixed << std::setprecision(3) << message.accel[0] << " " << message.accel[1] << " " << message.accel[2];
-		//std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
+		std::cout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
 		fileout << " <accelH>: " << message.accelH[0] << " " << message.accelH[1] << " " << message.accelH[2];
-		//std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
+		std::cout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
 		fileout << " <gyro>: " << message.gyro[0] << " " << message.gyro[1] << " " << message.gyro[2] << std::endl;
 		update_color();
 		break;
@@ -216,7 +216,13 @@ void handle(const protocol::decoded_message_t<buffer_size>& decoded) {
 		update_color();
 		break;
 	}
-		
+	case protocol::message::raw_10_message_t::ID: {
+		auto message = reinterpret_cast<const protocol::message::raw_10_message_t&>(decoded.payload);
+		std::cout << "<10>: <gps valid>: " << message.gps_valid << " <geiger>: " << message.geigerCount << std::endl;
+		fileout << message.time << "<10>: <gps valid>: " << message.gps_valid << " <geiger>: " << message.geigerCount << std::endl;
+		update_color();
+		break;
+	}
 	case protocol::message::fs_info_message_t::ID: {
 		auto message = reinterpret_cast<const protocol::message::fs_info_message_t&>(decoded.payload);
 		std::cout << "<filesystem>: Logging to " << +message.fname<< ", logged " << +message.fsize<< " bytes" << std::endl;
