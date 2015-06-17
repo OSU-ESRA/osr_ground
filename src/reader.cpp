@@ -281,16 +281,13 @@ int main(int argc, char **argv) {
 	std::string pre = "";
 	if (strcmp(argv[1], "/dev/ttyUSB0") != 0) {
 		pre = "avionics";
-		if (!boost::filesystem::exists("/tmp/rocket_avionics"))
-			pipe_gps = open("/tmp/rocket_avionics", O_WRONLY | O_NONBLOCK);
+		pipe_gps = open("/tmp/rocket_avionics", O_WRONLY|O_NONBLOCK|O_CREAT);
 		pipe_instrument = -1;
 	}
 	else {
 		pre = "payload";
-		if (!boost::filesystem::exists("/tmp/rocket_payload"))
-			pipe_gps = open("/tmp/rocket_payload", O_WRONLY | O_NONBLOCK);
-		if (!boost::filesystem::exists("/tmp/rocket_instrument"))
-			pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY|O_NONBLOCK);
+		pipe_gps = open("/tmp/rocket_payload", O_WRONLY|O_NONBLOCK|O_CREAT);
+		pipe_instrument = open("/tmp/rocket_instrument",O_WRONLY|O_NONBLOCK|O_CREAT);
 	}
 	
 	//Create new numbered log file
